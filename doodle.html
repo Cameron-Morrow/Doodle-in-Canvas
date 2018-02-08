@@ -1,0 +1,243 @@
+<!DOCTYPE HTML>
+<html>
+
+	<head>
+
+		<!-- Page Title -->
+		<title>Doodle</title>
+
+		<!-- Meta -->
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<!-- Style Sheets -->
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+
+		<style>
+		#sig-canvas{
+			cursor: crosshair;
+		}
+		</style>
+
+	</head>
+
+	<body>
+		<div class="container-fluid">
+			<form>
+				<div class="row">
+					<div class="col-md-12 text-center">
+						<h1 class="chunk">Doodle on the page!</h1>
+						<div class="row striped">
+							<div class="col-xs-2 center">
+								<a class="btn btn-default" id="sig-blue-color">Blue</a>
+							</div>
+							<div class="col-xs-2 center">
+								<a class="btn btn-default" id="sig-red-color">Red</a>
+							</div>
+							<div class="col-xs-2 center">
+								<a class="btn btn-default" id="sig-green-color">Green</a>
+							</div>
+							<div class="col-xs-2 center">
+								<a class="btn btn-default" id="sig-yellow-color">Yellow</a>
+							</div>
+							<div class="col-xs-2 center">
+								<a class="btn btn-default" id="sig-purple-color">Purple</a>
+							</div>
+							<div class="col-xs-2 center">
+								<a class="btn btn-default" id="sig-black-color">Black</a>
+							</div>
+						</div>
+						</br>
+						<div class="row striped">
+							<div class="col-md-6">
+								<a class="btn btn-default" id="sig-clearBtn">Clear Doodle</a>
+							</div>
+							<div class="col-md-6">
+								<a class="btn btn-default" id="sig-change-color">Random Color</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row striped">
+					<div class="col-md-12">
+						<canvas id="sig-canvas" height="1020px">
+							Incompatible Browser.
+						</canvas>
+					</div>
+				</div>
+			</form>
+		</div>
+	</body>
+	
+	<script>
+	(function() {
+
+		
+		// Get a regular interval for drawing to the screen
+		window.requestAnimFrame = (function (callback) {
+			return window.requestAnimationFrame || 
+						window.webkitRequestAnimationFrame ||
+						window.mozRequestAnimationFrame ||
+						window.oRequestAnimationFrame ||
+						window.msRequestAnimaitonFrame ||
+						function (callback) {
+							window.setTimeout(callback, 1000/60);
+						};
+		})();
+
+		// Set up the canvas
+		var canvas = document.getElementById("sig-canvas");
+		if(window.innerWidth > 600){
+			canvas.width = window.innerWidth * 0.73;
+		}else{
+			canvas.width = window.innerWidth * 0.93;
+		}
+		var ctx = canvas.getContext("2d");
+		ctx.strokeStyle = "#d90036";
+		ctx.lineWith = 2;
+
+		// Set up the user interface
+		var clearBtn = document.getElementById("sig-clearBtn");
+		var colorBtn = document.getElementById("sig-change-color");
+		var blueBtn = document.getElementById("sig-blue-color");
+		var redBtn = document.getElementById("sig-red-color");
+		var greenBtn = document.getElementById("sig-green-color");
+		var yellowBtn = document.getElementById("sig-yellow-color");
+		var purpleBtn = document.getElementById("sig-purple-color");
+		var blackBtn = document.getElementById("sig-black-color");
+
+		clearBtn.addEventListener("click", function (e) {
+			clearCanvas();
+		}, false);
+		colorBtn.addEventListener("click", function (e) {
+			ChangeColor();
+		}, false);
+		blueBtn.addEventListener("click", function (e) {
+			ChangeColorSelect("#0000FF");
+		}, false);
+		redBtn.addEventListener("click", function (e) {
+			ChangeColorSelect("#b30000");
+		}, false);
+		greenBtn.addEventListener("click", function (e) {
+			ChangeColorSelect("#008c00");
+		}, false);
+		yellowBtn.addEventListener("click", function (e) {
+			ChangeColorSelect("#d9d900");
+		}, false);
+		purpleBtn.addEventListener("click", function (e) {
+			ChangeColorSelect("#8600b3");
+		}, false);
+		blackBtn.addEventListener("click", function (e) {
+			ChangeColorSelect("#000000");
+		}, false);
+
+		// Set up mouse events for drawing
+		var drawing = false;
+		var mousePos = { x:0, y:0 };
+		var lastPos = mousePos;
+		canvas.addEventListener("mousedown", function (e) {
+			drawing = true;
+			lastPos = getMousePos(canvas, e);
+		}, false);
+		canvas.addEventListener("mouseup", function (e) {
+			drawing = false;
+		}, false);
+		canvas.addEventListener("mousemove", function (e) {
+			mousePos = getMousePos(canvas, e);
+		}, false);
+
+		// Set up touch events for mobile, etc
+		canvas.addEventListener("touchstart", function (e) {
+			mousePos = getTouchPos(canvas, e);
+			var touch = e.touches[0];
+			var mouseEvent = new MouseEvent("mousedown", {
+				clientX: touch.clientX,
+				clientY: touch.clientY
+			});
+			canvas.dispatchEvent(mouseEvent);
+		}, false);
+		canvas.addEventListener("touchend", function (e) {
+			var mouseEvent = new MouseEvent("mouseup", {});
+			canvas.dispatchEvent(mouseEvent);
+		}, false);
+		canvas.addEventListener("touchmove", function (e) {
+			var touch = e.touches[0];
+			var mouseEvent = new MouseEvent("mousemove", {
+				clientX: touch.clientX,
+				clientY: touch.clientY
+			});
+			canvas.dispatchEvent(mouseEvent);
+		}, false);
+
+		// Prevent scrolling when touching the canvas
+		document.body.addEventListener("touchstart", function (e) {
+			if (e.target == canvas) {
+				e.preventDefault();
+			}
+		}, false);
+		document.body.addEventListener("touchend", function (e) {
+			if (e.target == canvas) {
+				e.preventDefault();
+			}
+		}, false);
+		document.body.addEventListener("touchmove", function (e) {
+			if (e.target == canvas) {
+				e.preventDefault();
+			}
+		}, false);
+
+		// Get the position of the mouse relative to the canvas
+		function getMousePos(canvasDom, mouseEvent) {
+			var rect = canvasDom.getBoundingClientRect();
+			return {
+				x: mouseEvent.clientX - rect.left,
+				y: mouseEvent.clientY - rect.top
+			};
+		}
+
+		// Get the position of a touch relative to the canvas
+		function getTouchPos(canvasDom, touchEvent) {
+			var rect = canvasDom.getBoundingClientRect();
+			return {
+				x: touchEvent.touches[0].clientX - rect.left,
+				y: touchEvent.touches[0].clientY - rect.top
+			};
+		}
+
+		// Draw to the canvas
+		function renderCanvas() {
+			if (drawing) {
+				ctx.moveTo(lastPos.x, lastPos.y);
+				ctx.lineTo(mousePos.x, mousePos.y);
+				ctx.stroke();
+				lastPos = mousePos;
+			}
+		}
+
+		function clearCanvas() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.beginPath();
+		}
+		function ChangeColor() {
+			var letters = '0123456789ABCDEF';
+			var color = '#';
+			for (var i = 0; i < 6; i++ ) {
+				color += letters[Math.floor(Math.random() * 16)];
+			}
+			ctx.strokeStyle = color;
+			ctx.beginPath();
+		}
+		function ChangeColorSelect(Choice) {
+			ctx.strokeStyle = Choice;
+			ctx.beginPath();
+		}
+
+		// Allow for animation
+		(function drawLoop () {
+			requestAnimFrame(drawLoop);
+			renderCanvas();
+		})();
+	})();
+	</script>
+</html>
